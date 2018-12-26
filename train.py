@@ -31,7 +31,7 @@ def train(args):
     MAX_GEN = args.epochs
     k_frames = args.sequence_length
     print("train batch size:", args.train_batch_size, 'lr', args.lr)
-    train_net = ssd.SSD_NET(dataset=args.dataset, num_classes=num_class, modality=args.modality)
+    train_net = ssd.SSD_NET(dataset=args.dataset, frezze_init=args.freeze_init, num_classes=num_class, modality=args.modality)
     if args.reinit_all:
         print("reinit all data!!!")
         start_gen = 0
@@ -150,8 +150,8 @@ def train_epoch(train_net, dataloader, train_dataset, criterion, optimizer, sche
             loss_ls.update(loss_l.detach().numpy())
             loss_cs.update(loss_c.detach().numpy())
 
-        if i % 100 == 0:
-            print("GEN:", gen, "\tnum:{}/{}".format((i + 1) * args.batch_size, train_dataset.__len__()),
+        if (i+1) % 10 == 0:
+            print("GEN:", gen, "\tnum:{}/{}".format((i + 1) * args.train_batch_size, train_dataset.__len__()),
                   "\tloss loc:", loss_ls.avg, "\tloss conf:", loss_cs.avg, "\tloss:", total_loss.avg,
                   "\tlr:", scheduler.get_lr())
     with open('./train_log_{}.txt'.format(args.dataset), 'a') as train_log:
@@ -166,8 +166,8 @@ def train_epoch(train_net, dataloader, train_dataset, criterion, optimizer, sche
 
 def warm_up(train_net, dataloader, train_dataset, criterion, optimizer, scheduler, use_gpu, args, loss_loc_list,
             loss_class_list, loss_list):
-    warm_up_ratio = 0.01
-    warm_up_epoch = 1
+    warm_up_ratio = args.warm_up_ratio
+    warm_up_epoch = args.warm_up_epoch
     lr_inc = []
     for i in range(len(optimizer.param_groups)):
         lr_inc.append(optimizer.param_groups[i]['lr'] * (1 - warm_up_ratio)

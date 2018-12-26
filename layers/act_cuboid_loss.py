@@ -118,11 +118,11 @@ class CuboidLoss(nn.Module):
         batch_num = loc_preds.shape[0]
         if self.use_gpu:
         #     _prior_tubes = torch.from_numpy(prior_tubes).cuda()
-            encode_loc = torch.zeros(loc_preds.shape).cuda()
+            encode_loc = torch.zeros(loc_preds.shape, requires_grad=False).cuda()
             pos_index = torch.zeros(loc_preds.shape, dtype=torch.uint8).cuda()
         else:
         #     _prior_tubes = torch.from_numpy(prior_tubes)
-            encode_loc = torch.zeros(loc_preds.shape)
+            encode_loc = torch.zeros(loc_preds.shape, requires_grad=False)
             pos_index = torch.zeros(loc_preds.shape, dtype=torch.uint8)
         for i in range(batch_num):
             positive_samples_index = positive_samples_index_list[i]
@@ -130,7 +130,6 @@ class CuboidLoss(nn.Module):
                 pos_index[i, positive_samples_index[j, 0], :] = 1
                 self.EncodeTube(prior_tubes[positive_samples_index[j, 0], :], ground_truth[i, 1:],
                                 encode_loc[i, positive_samples_index[j, 0], :])
-        encode_loc = encode_loc.requires_grad = False
         loc_p = loc_preds[pos_index].view(-1, self.k_frames * 4)
         loc_t = encode_loc[pos_index].view(-1, self.k_frames * 4)
         loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False) / self.k_frames
@@ -157,7 +156,7 @@ class CuboidLoss(nn.Module):
             for j in range(negtive_samples_index.shape[0]):
                 conf_pos_index[i, negtive_samples_index[j], :] = 1
                 target_pos_index[i, negtive_samples_index[j]] = 1
-        tubes_label = Variable(tubes_label, requires_grad=False)
+        tubes_label.requires_grad = False
         if self.use_gpu:
             tubes_label = tubes_label.cuda()
         conf_p = conf_preds[conf_pos_index].view(-1, self.num_class)

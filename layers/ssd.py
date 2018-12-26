@@ -18,8 +18,9 @@ class scale_norm(nn.Module):
 
 
 class SSD_NET(nn.Module):
-    def __init__(self, dataset, num_classes=11, modality='rgb', k=6):
+    def __init__(self, dataset, frezze_init, num_classes=11, modality='rgb', k=6):
         super(SSD_NET, self).__init__()
+        self.frezze_init = frezze_init
         self.k_frames = k
         self.dataset = dataset
         self.modality = modality
@@ -480,7 +481,7 @@ class SSD_NET(nn.Module):
                                 conv8_confidence, conv9_confidence], dim=1)
         return loc_preds, conf_preds
 
-    def train(self, mode=True, frezze_init=False):
+    def train(self, mode=True):
         super(SSD_NET, self).train(mode)
         for m in self.modules():
             ps = list(m.parameters())
@@ -490,8 +491,8 @@ class SSD_NET(nn.Module):
         self.conv4_3_norm_conf_conv.bias.requires_grad = False
         self.conv4_3_norm_loc_conv.bias.data.fill_(0)
         self.conv4_3_norm_loc_conv.bias.requires_grad = False
-        if frezze_init:
-            self.frezze_init(freeze_norm_layer=False)
+        if self.frezze_init:
+            self.frezze_init_func(freeze_norm_layer=False)
 
     def eval(self):
         super(SSD_NET, self).eval()
@@ -626,7 +627,7 @@ class SSD_NET(nn.Module):
         parameters_list.append(conv.bias)
         return parameters_list
 
-    def frezze_init(self, freeze_norm_layer=False):
+    def frezze_init_func(self, freeze_norm_layer=False):
         m = self.__getattr__('conv1_1_{}'.format(self.layer_name))
         m.eval()
         m.weight.requires_grad = False

@@ -13,13 +13,14 @@ root_dir = osp.abspath(osp.join(osp.dirname(__file__), '..', '..'))
 
 class Config:
     # -------------------------data config ------------------------------#
-    dataset = 'UCF101v2'
-    # dataset = 'UCFSports'
+    # dataset = 'UCF101v2'
+    dataset = 'UCFSports'
     if dataset == 'UCF101v2':
         data_path = "/mnt/data/qzw/data/UCF101/"
     elif dataset == 'UCFSports':
         data_path = "/mnt/data/qzw/data/UCFSports/"
     else:
+        data_path = " "
         print("dataset not found!!")
         exit(0)
 
@@ -35,15 +36,15 @@ class Config:
     # -------------------------model config ------------------------------#
 
     base_model_name = 'vgg16'
-    freeze_init = False
+    freeze_init = True
 
     # -------------------------train config ------------------------------#
     reinit_all = True
     use_gpu = True
-    warm_up_epoch = 3
-    warm_up_ratio = 1 / 10
+    warm_up_epoch = 5
+    warm_up_ratio = 1 / 100
     epochs = 200
-    train_batch_size = 256
+    train_batch_size = 128
     valid_batch_size = 1
     workers = 16
 
@@ -52,7 +53,7 @@ class Config:
     weight_decay = 5e-4
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 
 
 config = Config()

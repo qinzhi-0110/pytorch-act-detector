@@ -4,7 +4,7 @@ import torch
 import torch.utils.data as data
 import numpy as np
 import cv2
-from data import transforms
+from . import transforms
 from torchvision.transforms import functional as F
 
 

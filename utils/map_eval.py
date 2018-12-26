@@ -1,7 +1,6 @@
 import pickle
 import numpy as np
-from data import dataset
-import box
+from . import box
 
 
 def nms_class(boxes_scores_list, nms_threshold):
