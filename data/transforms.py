@@ -113,6 +113,26 @@ class Normalize(object):
         return tensor
 
 
+class Expand(object):
+    def __init__(self, mean):
+        self.expand_prob = 0.5
+        self.max_expand_ratio = 4.0
+        self.mean = mean
+
+    def __call__(self, image_list, ground_truth):
+        out_image_list = image_list
+        if np.random.random() < self.expand_prob:
+            expand_ratio = np.random.uniform(1, self.max_expand_ratio)
+            ori_h, ori_w, _ = image_list[0].shape
+            new_h, new_w = int(ori_h*expand_ratio), int(ori_w*expand_ratio)
+            out_image_list = [(np.zeros((new_h, new_w, 3), dtype=np.float32) + self.mean) for i in range(len(image_list))]
+            h_off, w_off = int(np.floor(new_h - ori_h)), int(np.floor(new_w - ori_w))
+            for i in range(len(image_list)):
+                out_image_list[i][h_off:h_off+ori_h, w_off:w_off+ori_w] = image_list[i]
+            ground_truth[1:] += np.array([w_off, h_off, w_off, h_off]*len(image_list), dtype=np.float32)
+        return out_image_list, ground_truth
+
+
 def PCA_Jittering(img):
     img_size = img.size / 3
     # print(img.size, img_size)

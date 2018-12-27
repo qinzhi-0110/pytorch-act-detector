@@ -44,16 +44,16 @@ class Config:
     warm_up_epoch = 5
     warm_up_ratio = 1 / 100
     epochs = 200
-    train_batch_size = 10
+    train_batch_size = 5
     valid_batch_size = 1
     workers = 16
 
-    lr = 0.0001
+    lr = 0.00006
     momentum = 0.9
     weight_decay = 5e-4
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
 config = Config()

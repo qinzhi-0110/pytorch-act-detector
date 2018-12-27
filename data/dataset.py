@@ -25,6 +25,7 @@ class TubeDataset(data.Dataset):
             print("TubeDataset.DNAME value error!!")
             exit(-1)
         self.color_jitter = transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3)
+        self.expand = transforms.Expand(self.MEAN)
         self.modality = modality
         self.data_path = data_path
         self.sequence_length = sequence_length
@@ -89,8 +90,7 @@ class TubeDataset(data.Dataset):
                     exit(-1)
                 image_list += [im]
             image_list, ground_truth = transforms.random_flip(image_list, ground_truth)
-            # image_list = transforms_cv2.apply_distort(image_list)
-            # image_list, ground_truth = transforms_cv2.apply_expand(image_list, ground_truth, sequence_length=self.sequence_length, mean_values=self.MEAN)
+            # image_list, ground_truth = self.expand(image_list, ground_truth)
             image_list = self.color_jitter(image_list)
             for i in range(image_list.__len__()):
                 image_list[i] = image_list[i] - self.MEAN
