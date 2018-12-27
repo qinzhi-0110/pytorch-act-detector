@@ -10,7 +10,7 @@ from torchvision.transforms import functional as F
 
 class TubeDataset(data.Dataset):
     def __init__(self, DNAME, data_path, phase, modality, sequence_length):
-        ground_truth_file = '/home/qzw/code/my-act-detector/cache/{}-GT.pkl'.format(DNAME)
+        ground_truth_file = os.path.join(data_path, './cache/{}-GT.pkl'.format(DNAME))
         with open(ground_truth_file, 'rb') as fid:
             cache = pickle.load(fid, encoding='iso-8859-1')
         for k in cache:

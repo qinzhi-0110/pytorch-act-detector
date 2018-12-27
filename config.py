@@ -36,19 +36,19 @@ class Config:
     # -------------------------model config ------------------------------#
 
     base_model_name = 'vgg16'
-    freeze_init = True
+    freeze_init = False
 
     # -------------------------train config ------------------------------#
-    reinit_all = True
+    reinit_all = False
     use_gpu = True
     warm_up_epoch = 5
     warm_up_ratio = 1 / 100
     epochs = 200
-    train_batch_size = 128
+    train_batch_size = 10
     valid_batch_size = 1
     workers = 16
 
-    lr = 0.001
+    lr = 0.0001
     momentum = 0.9
     weight_decay = 5e-4
 

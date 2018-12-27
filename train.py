@@ -49,7 +49,7 @@ def train(args):
         print("load last train data!!!")
         data_dict = torch.load(args.new_trained_model)
         start_gen = data_dict['gen_num']
-        # start_gen = 0
+        start_gen = 0
         net_state_dict = {}
         for key in data_dict['net_state_dict']:
             if 'module.' in key:
@@ -103,7 +103,7 @@ def train(args):
             temp_dict['mmap_list'] = mmap_list
             torch.save(temp_dict, args.new_trained_model)
             print("net save ok!!")
-            if gen > 100 and (gen + 1) % 4 == 0 and loss_list[-1] < 1.0:
+            if gen > 50 and (gen + 1) % 4 == 0 and loss_list[-1] < 1.0:
                 mmap = test.eval_rgb_or_flow(model=train_net.module, eval_dataset=None, eval_dataloader=None, args=args,
                                         GEN_NUM=gen + 1)
                 with open('./train_log_{}.txt'.format(args.dataset), 'a') as train_log:
@@ -150,10 +150,11 @@ def train_epoch(train_net, dataloader, train_dataset, criterion, optimizer, sche
             loss_ls.update(loss_l.detach().numpy())
             loss_cs.update(loss_c.detach().numpy())
 
-        if (i+1) % 10 == 0:
+        if (i+1) % 100 == 0:
             print("GEN:", gen, "\tnum:{}/{}".format((i + 1) * args.train_batch_size, train_dataset.__len__()),
                   "\tloss loc:", loss_ls.avg, "\tloss conf:", loss_cs.avg, "\tloss:", total_loss.avg,
                   "\tlr:", scheduler.get_lr())
+    print("\tloss loc:", loss_ls.avg, "\tloss conf:", loss_cs.avg, "\tloss:", total_loss.avg)
     with open('./train_log_{}.txt'.format(args.dataset), 'a') as train_log:
         log = "GEN:{}".format(gen) + "\tloss loc:{}".format(loss_ls.avg) + "\tloss conf:{}".format(loss_cs.avg) + \
               "\tloss:{}".format(total_loss.avg) + "\tlr:{}".format(scheduler.get_lr()) + time.strftime(
