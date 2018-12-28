@@ -49,7 +49,7 @@ def train(args):
         print("load last train data!!!")
         data_dict = torch.load(args.new_trained_model)
         start_gen = data_dict['gen_num']
-        # start_gen = 0
+        start_gen = 0
         net_state_dict = {}
         for key in data_dict['net_state_dict']:
             if 'module.' in key:

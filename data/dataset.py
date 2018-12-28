@@ -89,13 +89,18 @@ class TubeDataset(data.Dataset):
                     print("{}not found!!".format(image_path))
                     exit(-1)
                 image_list += [im]
+            image_list, ground_truth = transforms.random_crop(image_list, ground_truth)
             image_list, ground_truth = transforms.random_flip(image_list, ground_truth)
-            # image_list, ground_truth = self.expand(image_list, ground_truth)
             image_list = self.color_jitter(image_list)
+            image_list, ground_truth = self.expand(image_list, ground_truth)
+            height_new, width_new, _ = image_list[0].shape
+            ground_truth[1::4] = ground_truth[1::4]/width_new
+            ground_truth[2::4] = ground_truth[2::4] / height_new
+            ground_truth[3::4] = ground_truth[3::4] / width_new
+            ground_truth[4::4] = ground_truth[4::4] / height_new
             for i in range(image_list.__len__()):
                 image_list[i] = image_list[i] - self.MEAN
             image_data = np.concatenate(image_list, axis=2).astype('float32')
-            image_data, ground_truth = transforms.random_crop(image_data, ground_truth)
             image_data = cv2.resize(image_data, (300, 300), interpolation=cv2.INTER_LINEAR)
             image_data = np.transpose(image_data, (2, 0, 1))
             image_data = torch.from_numpy(image_data)

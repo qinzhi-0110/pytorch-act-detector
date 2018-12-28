@@ -16,10 +16,10 @@ def random_flip(image_list, target):
     return image_list, target
 
 
-def random_crop(image, target):
+def random_crop(image_list, target):
     target = target.copy()
     scale = 0.5
-    height, width, _ = image.shape
+    height, width, _ = image_list[0].shape
     gt_w = target[3::4] - target[1::4]
     gt_h = target[4::4] - target[2::4]
     gt_area = gt_w * gt_h
@@ -33,16 +33,10 @@ def random_crop(image, target):
         ymax_crop = xmax_crop
         xmin_crop, ymin_crop, xmax_crop, ymax_crop = int(width*xmin_crop), int(height*ymin_crop), int(width*xmax_crop), int(height*ymax_crop)
 
-        image_new = image[ymin_crop:ymax_crop, xmin_crop:xmax_crop, :]
-        height_new, width_new, _ = image_new.shape
-
         xmin_cross = np.maximum(target[1::4], xmin_crop)
         ymin_cross = np.maximum(target[2::4], ymin_crop)
         xmax_cross = np.minimum(target[3::4], xmax_crop)
         ymax_cross = np.minimum(target[4::4], ymax_crop)
-
-        # ymax_cross = (ymax_cross * height_new - 1) / height_new
-        # xmax_cross = (xmax_cross * width_new - 1) / width_new
 
         cross_w = xmax_cross - xmin_cross
         cross_h = ymax_cross - ymin_cross
@@ -52,14 +46,17 @@ def random_crop(image, target):
             continue
         cross_area = cross_w * cross_h
         cross_area = cross_area.sum()
-        if cross_area / gt_area < 0.9:
+        if cross_area / gt_area < 0.8:
             continue
-        target[1::4] = (xmin_cross - xmin_crop)/width_new
-        target[2::4] = (ymin_cross - ymin_crop)/height_new
-        target[3::4] = (xmax_cross - xmin_crop - 1)/width_new
-        target[4::4] = (ymax_cross - ymin_crop - 1)/height_new
+        target[1::4] = xmin_cross - xmin_crop
+        target[2::4] = ymin_cross - ymin_crop
+        target[3::4] = xmax_cross - xmin_crop
+        target[4::4] = ymax_cross - ymin_crop
         break
-    return image_new, target
+
+    image_list_new = [image_list[i][ymin_crop:ymax_crop+1, xmin_crop:xmax_crop+1, :] for i in range(len(image_list))]
+
+    return image_list_new, target
 
 
 class ColorJitter(object):

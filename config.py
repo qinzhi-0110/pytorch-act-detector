@@ -48,7 +48,7 @@ class Config:
     valid_batch_size = 1
     workers = 16
 
-    lr = 0.00006
+    lr = 0.0001
     momentum = 0.9
     weight_decay = 5e-4
 
