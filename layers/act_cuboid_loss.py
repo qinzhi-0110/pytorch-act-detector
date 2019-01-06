@@ -55,11 +55,12 @@ class CuboidLoss(nn.Module):
         tubes_label[:, :, 0] = 1
         positive_samples_index_list = []
         N = 0
+        if self.use_gpu:
+            iou_table = torch.zeros(prior_tubes_num, dtype=torch.float32).cuda()
+        else:
+            iou_table = torch.zeros(prior_tubes_num, dtype=torch.float32)
         for i in range(batch_num):
-            if self.use_gpu:
-                iou_table = torch.zeros(prior_tubes_num, dtype=torch.float32).cuda()
-            else:
-                iou_table = torch.zeros(prior_tubes_num, dtype=torch.float32)
+            iou_table.fill_(0)
             # for prior in range(prior_tubes_num):
             #     iou_table[prior] = get_tube_overlap(prior_tubes[prior, :], _ground_truth[i, 1:], self.k_frames)
             get_tube_overlap(prior_tubes, ground_truth[i, 1:], iou_table)
@@ -80,6 +81,9 @@ class CuboidLoss(nn.Module):
                     tubes_label[i, tt, 0] = 0
             N += positive_sample_index.__len__()
             positive_samples_index_list += [torch.tensor(positive_sample_index)]
+        if N == 0:
+            print("no positive samples!")
+            exit(-1)
         return positive_samples_index_list, tubes_label, tubes_label_index, N
 
     def ACTComputeConfLoss(self, conf_preds, tubes_label):
@@ -132,7 +136,7 @@ class CuboidLoss(nn.Module):
                                 encode_loc[i, positive_samples_index[j, 0], :])
         loc_p = loc_preds[pos_index].view(-1, self.k_frames * 4)
         loc_t = encode_loc[pos_index].view(-1, self.k_frames * 4)
-        loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False) / self.k_frames
+        loss_l = F.smooth_l1_loss(loc_p, loc_t, reduction='sum') / self.k_frames
         return loss_l
 
     def ACTGetConfLoss(self, conf_preds, positive_samples_index_list, negtive_samples_index_list, tubes_label):
@@ -161,7 +165,7 @@ class CuboidLoss(nn.Module):
             tubes_label = tubes_label.cuda()
         conf_p = conf_preds[conf_pos_index].view(-1, self.num_class)
         target_weights = tubes_label[target_pos_index]
-        loss_c = F.cross_entropy(conf_p, target_weights, size_average=True)
+        loss_c = F.cross_entropy(conf_p, target_weights, reduction='mean')
         return loss_c
 
     def EncodeTube(self, prior_tube, gt_tube, encode):
@@ -202,6 +206,13 @@ class CuboidLoss(nn.Module):
         loss_c = self.ACTGetConfLoss(conf_preds, positive_samples_index_list, negtive_samples_index_list, tubes_label_index)
         loss_l /= N
         # loss_c /= N
+        if torch.isinf(loss_l) or torch.isnan(loss_l) or torch.isinf(loss_c) or torch.isnan(loss_c):
+            with open("./inf_temp_data.pkl", 'wb') as f:
+                pickle.dump(loc_preds.cpu().detach(), f)
+                pickle.dump(conf_preds.cpu().detach(), f)
+                pickle.dump(ground_truth.cpu().detach(), f)
+            print("get inf or nan data!!")
+            exit(-1)
         return loss_l, loss_c
 
 

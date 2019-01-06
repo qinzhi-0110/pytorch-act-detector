@@ -6,14 +6,15 @@ from PIL import Image
 
 
 def random_flip(image_list, target):
-    if np.random.random() < 0.5:
+    pro = np.random.random()
+    if pro < 0.5:
         height, width, _ = image_list[0].shape
         for i in range(image_list.__len__()):
             image_list[i] = np.flip(image_list[i], axis=1)
         xmin_new = width - target[3::4]
         target[3::4] = width - target[1::4]
         target[1::4] = xmin_new
-    return image_list, target
+    return image_list, target, pro
 
 
 def random_crop(image_list, target):
@@ -25,13 +26,12 @@ def random_crop(image_list, target):
     gt_area = gt_w * gt_h
     gt_area = gt_area.sum()
     while True:
-        xmin_crop = (1 - scale) * np.random.random()
-        # ymin_crop = (1 - scale) * np.random.random()
-        ymin_crop = xmin_crop
-        xmax_crop = xmin_crop + (1 - xmin_crop - scale) * np.random.random() + scale
-        # ymax_crop = ymin_crop + (1 - ymin_crop - scale) * np.random.random() + scale
-        ymax_crop = xmax_crop
-        xmin_crop, ymin_crop, xmax_crop, ymax_crop = int(width*xmin_crop), int(height*ymin_crop), int(width*xmax_crop), int(height*ymax_crop)
+        xmin_crop_ratio = (1 - scale) * np.random.random()
+        ymin_crop_ratio = xmin_crop_ratio
+        xmax_crop_ratio = xmin_crop_ratio + (1 - xmin_crop_ratio - scale) * np.random.random() + scale
+        ymax_crop_ratio = xmax_crop_ratio
+        xmin_crop, ymin_crop, xmax_crop, ymax_crop = int(width * xmin_crop_ratio), int(height * ymin_crop_ratio), int(
+            width * xmax_crop_ratio), int(height * ymax_crop_ratio)
 
         xmin_cross = np.maximum(target[1::4], xmin_crop)
         ymin_cross = np.maximum(target[2::4], ymin_crop)
@@ -40,9 +40,9 @@ def random_crop(image_list, target):
 
         cross_w = xmax_cross - xmin_cross
         cross_h = ymax_cross - ymin_cross
-        if (cross_w < 0).sum() > 0:
+        if (cross_w < 0.01).sum() > 0:
             continue
-        if (cross_h < 0).sum() > 0:
+        if (cross_h < 0.01).sum() > 0:
             continue
         cross_area = cross_w * cross_h
         cross_area = cross_area.sum()
@@ -56,7 +56,7 @@ def random_crop(image_list, target):
 
     image_list_new = [image_list[i][ymin_crop:ymax_crop+1, xmin_crop:xmax_crop+1, :] for i in range(len(image_list))]
 
-    return image_list_new, target
+    return image_list_new, target, (xmin_crop_ratio, xmax_crop_ratio)
 
 
 class ColorJitter(object):
@@ -118,16 +118,20 @@ class Expand(object):
 
     def __call__(self, image_list, ground_truth):
         out_image_list = image_list
-        if np.random.random() < self.expand_prob:
+        pro = np.random.random()
+        if pro < self.expand_prob:
             expand_ratio = np.random.uniform(1, self.max_expand_ratio)
             ori_h, ori_w, _ = image_list[0].shape
-            new_h, new_w = int(ori_h*expand_ratio), int(ori_w*expand_ratio)
-            out_image_list = [(np.zeros((new_h, new_w, 3), dtype=np.float32) + self.mean) for i in range(len(image_list))]
+            new_h, new_w = int(ori_h * expand_ratio), int(ori_w * expand_ratio)
+            out_image_list = [(np.zeros((new_h, new_w, 3), dtype=np.float32) + self.mean) for i in
+                              range(len(image_list))]
             h_off, w_off = int(np.floor(new_h - ori_h)), int(np.floor(new_w - ori_w))
             for i in range(len(image_list)):
-                out_image_list[i][h_off:h_off+ori_h, w_off:w_off+ori_w] = image_list[i]
-            ground_truth[1:] += np.array([w_off, h_off, w_off, h_off]*len(image_list), dtype=np.float32)
-        return out_image_list, ground_truth
+                out_image_list[i][h_off:h_off + ori_h, w_off:w_off + ori_w] = image_list[i]
+            ground_truth[1:] += np.array([w_off, h_off, w_off, h_off] * len(image_list), dtype=np.float32)
+        else:
+            expand_ratio = 1.0
+        return out_image_list, ground_truth, (pro, expand_ratio)
 
 
 def PCA_Jittering(img):

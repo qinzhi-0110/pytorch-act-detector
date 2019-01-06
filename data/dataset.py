@@ -63,7 +63,6 @@ class TubeDataset(data.Dataset):
             self.train = False
             self.videos_list = self.test_videos[0]
             # self.videos_list = self.train_videos[0]
-
         else:
             print("dataset phase value error!")
             exit(-1)
@@ -89,12 +88,44 @@ class TubeDataset(data.Dataset):
                     print("{}not found!!".format(image_path))
                     exit(-1)
                 image_list += [im]
-            image_list, ground_truth = transforms.random_crop(image_list, ground_truth)
-            image_list, ground_truth = transforms.random_flip(image_list, ground_truth)
+
+            image_list, ground_truth, _random_crop_data = transforms.random_crop(image_list, ground_truth)
+            if (ground_truth[1::4] < ground_truth[3::4]).sum() != 6 or (ground_truth[2::4] < ground_truth[4::4]).sum() != 6:
+                print("_random_crop_data saved!!")
+                with open('./error_random_crop_data.pkl', 'wb') as f:
+                    pickle.dump(index, f)
+                    pickle.dump(image_list, f)
+                    pickle.dump(ground_truth, f)
+                    pickle.dump(_random_crop_data, f)
+                exit(-1)
+
+            image_list, ground_truth, _random_flip_data = transforms.random_flip(image_list, ground_truth)
+            if (ground_truth[1::4] < ground_truth[3::4]).sum() != 6 or (ground_truth[2::4] < ground_truth[4::4]).sum() != 6:
+                print("_random_crop_data saved!!")
+                with open('./error_random_flip_data.pkl', 'wb') as f:
+                    pickle.dump(index, f)
+                    pickle.dump(image_list, f)
+                    pickle.dump(ground_truth, f)
+                    pickle.dump(_random_crop_data, f)
+                    pickle.dump(_random_flip_data, f)
+                exit(-1)
+
             image_list = self.color_jitter(image_list)
-            image_list, ground_truth = self.expand(image_list, ground_truth)
+            image_list, ground_truth, _random_expand_data = self.expand(image_list, ground_truth)
+            if (ground_truth[1::4] < ground_truth[3::4]).sum() != 6 or (
+                    ground_truth[2::4] < ground_truth[4::4]).sum() != 6:
+                print("_random_expand_data saved!!")
+                with open('./error_random_expand_data.pkl', 'wb') as f:
+                    pickle.dump(index, f)
+                    pickle.dump(image_list, f)
+                    pickle.dump(ground_truth, f)
+                    pickle.dump(_random_crop_data, f)
+                    pickle.dump(_random_flip_data, f)
+                    pickle.dump(_random_expand_data, f)
+                exit(-1)
+
             height_new, width_new, _ = image_list[0].shape
-            ground_truth[1::4] = ground_truth[1::4]/width_new
+            ground_truth[1::4] = ground_truth[1::4] / width_new
             ground_truth[2::4] = ground_truth[2::4] / height_new
             ground_truth[3::4] = ground_truth[3::4] / width_new
             ground_truth[4::4] = ground_truth[4::4] / height_new
@@ -151,5 +182,15 @@ class TubeDataset(data.Dataset):
 
 
 if __name__ == '__main__':
-    data_path = "/media/lkx/_sdc/qzw/ACT-Detector/caffe_act_detector/data/UCF101"
-    ucf101v2 = TubeDataset('UCFSports', data_path=data_path, phase='train', modality='rgb', sequence_length=6)
+    import config
+    args = config.Config()
+    with open('./error_random_flip_data.pkl', 'wb') as f:
+        index = pickle.load(f)
+        image_list = pickle.load(f)
+        ground_truth = pickle.load(f)
+        _random_crop_data = pickle.load(f)
+        _random_flip_data = pickle.load(f)
+    train_dataset = TubeDataset(args.dataset, data_path=args.data_path, phase='train',
+                                        modality=args.modality,
+                                        sequence_length=6)
+    a, b = train_dataset[index]

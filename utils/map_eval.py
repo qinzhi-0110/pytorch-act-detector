@@ -142,7 +142,6 @@ def calc_pr(all_frame_boxes_list, dataset):
     all_frame_boxes = np.vstack(all_frame_boxes_list)
     label_pr_dict = {}
     for label in range(labels.__len__()):
-        # print("label:", label)
         pre_idx = np.where(all_frame_boxes[:, 2] == label)[0]
         label_pre_box = all_frame_boxes[pre_idx]
         pre_idx = np.argsort(-label_pre_box[:, 3])
@@ -176,7 +175,6 @@ def calc_pr(all_frame_boxes_list, dataset):
             pr[pr_cnt, 1] = tp / (tp + fn)
             pr_cnt += 1
         label_pr_dict[label] = pr
-
     with open(output_file, 'wb') as f:
         pickle.dump(label_pr_dict, f)
     ap = np.empty(labels.__len__())
@@ -187,6 +185,8 @@ def calc_pr(all_frame_boxes_list, dataset):
     mmap = np.mean(ap)
     print("map:", mmap)
     return mmap
+
+
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ from data import dataset
 import multiprocessing
 import time
 import torch.nn.functional as F
+import pickle
 
 
 def data_handle_and_save_process(all_frame_boxes_dict, video_index, conf_preds, decode_video_tubes, num_class,
@@ -177,11 +178,11 @@ def eval_rgb_or_flow(model, eval_dataset, eval_dataloader, args, GEN_NUM):
             decode_video_tubes_list += [decode_video_tubes.cpu()]
         conf_preds = torch.cat(conf_preds_list, dim=0)
         decode_video_tubes = torch.cat(decode_video_tubes_list, dim=0)
-        data_handle_and_save_process(all_frame_boxes_dict, video_index, conf_preds, decode_video_tubes, num_class,
-                                     args.sequence_length, height, width)
-        # pool.apply_async(data_handle_and_save_process, (all_frame_boxes_dict, video_index, conf_preds,
-        #                                                 decode_video_tubes, num_class, args.sequence_length,
-        #                                                 height, width, ))
+        # data_handle_and_save_process(all_frame_boxes_dict, video_index, conf_preds, decode_video_tubes, num_class,
+        #                              args.sequence_length, height, width)
+        pool.apply_async(data_handle_and_save_process, (all_frame_boxes_dict, video_index, conf_preds,
+                                                        decode_video_tubes, num_class, args.sequence_length,
+                                                        height, width, ))
     print("waiting calc!!")
     pool.close()
     pool.join()
@@ -189,6 +190,35 @@ def eval_rgb_or_flow(model, eval_dataset, eval_dataloader, args, GEN_NUM):
     all_frame_boxes_list = []
     for key in all_frame_boxes_dict:
         all_frame_boxes_list += all_frame_boxes_dict[key]
+    with open(args.all_frame_boxes_list_result, "wb") as file:
+        pickle.dump(all_frame_boxes_list, file)
     return map_eval.calc_pr(all_frame_boxes_list, eval_dataset)
 
 
+if __name__ == '__main__':
+    import config
+    from layers import ssd
+    args = config.Config()
+    if args.dataset == 'UCF101v2':
+        num_class = 25
+    elif args.dataset == 'UCFSports':
+        num_class = 11
+    else:
+        num_class = 0
+        print("No dataset name {}".format(args.dataset))
+        exit(0)
+    eval_net = ssd.SSD_NET(dataset=args.dataset, frezze_init=args.freeze_init, num_classes=num_class,
+                            modality=args.modality)
+    data_dict = torch.load("/mnt/data/qzw/model/pytorch-act-detector/{}/best-rgb-0.8601.pkl".format(args.dataset))
+    net_state_dict = {}
+    for key in data_dict['net_state_dict']:
+        if 'module.' in key:
+            new_key = key.replace('module.', '')
+        else:
+            new_key = key
+        net_state_dict[new_key] = data_dict['net_state_dict'][key]
+    eval_net.load_state_dict(net_state_dict)
+    if args.use_gpu:
+        eval_net = eval_net.cuda()
+    mmap = eval_rgb_or_flow(model=eval_net, eval_dataset=None, eval_dataloader=None, args=args,
+                                 GEN_NUM=data_dict['gen_num'])
